@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import Hls from 'hls.js';
 import {
   Play,
   Pause,
@@ -40,7 +39,7 @@ export default function VideoPlayer({
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const hlsRef = useRef<Hls | null>(null);
+  const hlsRef = useRef<any>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Active server index
@@ -148,39 +147,51 @@ export default function VideoPlayer({
       hlsRef.current = null;
     }
 
+    let isCancelled = false;
+
     // Set muted initially to satisfy browser autoplay guidelines
     video.muted = true;
     setIsMuted(true);
 
     const isHls = streamUrl.includes('.m3u8') || activeServer?.type === 'hls';
 
-    if (isHls && Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: false,
-        maxBufferLength: 60,
-        maxMaxBufferLength: 120,
-        maxBufferSize: 60 * 1024 * 1024,
-        backBufferLength: 30,
-        progressive: true,
-      });
-      hlsRef.current = hls;
+    if (isHls) {
+      import('hls.js')
+        .then(({ default: Hls }) => {
+          if (isCancelled || !videoRef.current) return;
+          if (Hls.isSupported()) {
+            const hls = new Hls({
+              enableWorker: true,
+              lowLatencyMode: false,
+              maxBufferLength: 60,
+              maxMaxBufferLength: 120,
+              maxBufferSize: 60 * 1024 * 1024,
+              backBufferLength: 30,
+              progressive: true,
+            });
+            hlsRef.current = hls;
 
-      hls.loadSource(streamUrl);
-      hls.attachMedia(video);
+            hls.loadSource(streamUrl);
+            hls.attachMedia(video);
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setIsLoading(false);
-        safePlay(video);
-      });
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              if (isCancelled) return;
+              setIsLoading(false);
+              safePlay(video);
+            });
 
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) {
-          console.warn('HLS Fatal Error:', data.type);
-          setIsLoading(false);
-          setErrorMsg('تعذر تشغيل هذا البث المباشر. يرجى اختيار سيرفر آخر من القائمة.');
-        }
-      });
+            hls.on(Hls.Events.ERROR, (_event, data) => {
+              if (data.fatal && !isCancelled) {
+                console.warn('HLS Fatal Error:', data.type);
+                setIsLoading(false);
+                setErrorMsg('تعذر تشغيل هذا البث المباشر. يرجى اختيار سيرفر آخر من القائمة.');
+              }
+            });
+          }
+        })
+        .catch((err) => {
+          console.warn('Failed to dynamically import hls.js:', err);
+        });
     } else {
       // Native Video (MP4 / WebM)
       video.src = streamUrl;
@@ -222,6 +233,7 @@ export default function VideoPlayer({
     }
 
     return () => {
+      isCancelled = true;
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;

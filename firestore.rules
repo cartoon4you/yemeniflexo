@@ -57,5 +57,10 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
     }
+
+    // Media cache collection (read/write for caching scraped metadata)
+    match /media_cache/{cacheId} {
+      allow read, write: if true;
+    }
   }
 }

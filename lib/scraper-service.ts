@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import { MediaItem, ServerOption, EpisodeItem, LinkGrabberResult, LinkGrabberFile } from './types';
 import { SAMPLE_CATALOG } from './catalog-data';
+import { getFirestoreCache, setFirestoreCache } from './firestore-cache';
 
 const BASE_URL = process.env.AKWAM_BASE_URL || 'https://akwam.ss';
 
@@ -146,7 +147,8 @@ export async function fetchHTML(
           Referer: BASE_URL,
         },
         signal: controller.signal,
-      });
+        next: { revalidate: 300 },
+      } as any);
 
       if (!response.ok) return null;
       const html = await response.text();
@@ -248,9 +250,19 @@ export async function getHomeContent(): Promise<{
   trending: MediaItem[];
 }> {
   const cacheKey = 'home_screen_latest_additions_15m';
+
+  // Tier 1: In-Memory Cache (0ms)
   const cached = homeContentCache.get(cacheKey) || getFromCache<any>(cacheKey);
   if (cached) return cached;
-  
+
+  // Tier 2: Firestore Persistent Cache
+  const cachedFs = await getFirestoreCache<any>(cacheKey);
+  if (cachedFs) {
+    homeContentCache.set(cacheKey, cachedFs, 15 * 60 * 1000);
+    saveToCache(cacheKey, cachedFs, 15 * 60 * 1000);
+    return cachedFs;
+  }
+
   if (pendingRequests.has(cacheKey)) {
     return pendingRequests.get(cacheKey);
   }
@@ -299,12 +311,13 @@ export async function getHomeContent(): Promise<{
       trending: trending.slice(0, 10),
     };
 
-    // Store in ConcurrentMemoryCache with 15-minute TTL (15 * 60 * 1000 ms)
+    // Store in ConcurrentMemoryCache & Firestore Persistent Cache
     homeContentCache.set(cacheKey, result, 15 * 60 * 1000);
     saveToCache(cacheKey, result, 15 * 60 * 1000);
+    setFirestoreCache(cacheKey, result, 15 * 60 * 1000);
     return result;
   })();
-  
+
   pendingRequests.set(cacheKey, fetchPromise);
   const result = await fetchPromise;
   pendingRequests.delete(cacheKey);
@@ -374,6 +387,12 @@ export async function searchMedia(query: string): Promise<MediaItem[]> {
   const cacheKey = `search_${qClean}`;
   const cached = getFromCache<MediaItem[]>(cacheKey);
   if (cached) return cached;
+
+  const cachedFs = await getFirestoreCache<MediaItem[]>(cacheKey);
+  if (cachedFs) {
+    saveToCache(cacheKey, cachedFs, 10 * 60 * 1000);
+    return cachedFs;
+  }
   
   if (pendingRequests.has(cacheKey)) {
     return pendingRequests.get(cacheKey);
@@ -408,7 +427,8 @@ export async function searchMedia(query: string): Promise<MediaItem[]> {
       // ignore
     }
 
-    saveToCache(cacheKey, localMatches, 5 * 60 * 1000); // 5 min cache
+    saveToCache(cacheKey, localMatches, 10 * 60 * 1000); // 10 min cache
+    setFirestoreCache(cacheKey, localMatches, 10 * 60 * 1000);
     return localMatches;
   })();
   
@@ -457,6 +477,16 @@ export async function getMediaDetails(id: string): Promise<MediaItem | null> {
     getFromCache<MediaItem>(cacheKey);
 
   if (cached) return cached;
+
+  // 2. Check Firestore Persistent Cache
+  const cachedFs = await getFirestoreCache<MediaItem>(cacheKey);
+  if (cachedFs) {
+    mediaDetailsCache.set(cacheKey, cachedFs, 60 * 60 * 1000);
+    mediaDetailsCache.set(id, cachedFs, 60 * 60 * 1000);
+    mediaDetailsCache.set(decodedPath, cachedFs, 60 * 60 * 1000);
+    saveToCache(cacheKey, cachedFs, 60 * 60 * 1000);
+    return cachedFs;
+  }
 
   if (pendingRequests.has(cacheKey)) {
     return pendingRequests.get(cacheKey);
@@ -753,11 +783,12 @@ export async function getMediaDetails(id: string): Promise<MediaItem | null> {
           episodes: episodes.length > 0 ? episodes : sampleFound?.episodes,
         };
 
-        // Cache in ConcurrentMemoryCache for 60 minutes
+        // Cache in ConcurrentMemoryCache & Firestore for 60 minutes
         mediaDetailsCache.set(cacheKey, result, 60 * 60 * 1000);
         mediaDetailsCache.set(id, result, 60 * 60 * 1000);
         mediaDetailsCache.set(decodedPath, result, 60 * 60 * 1000);
         saveToCache(cacheKey, result, 60 * 60 * 1000);
+        setFirestoreCache(cacheKey, result, 60 * 60 * 1000);
         return result;
       }
     } catch (err) {

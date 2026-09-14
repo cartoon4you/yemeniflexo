@@ -67,6 +67,30 @@
         }
       },
       "required": ["id", "title", "userId"]
+    },
+    "MediaCache": {
+      "title": "MediaCache",
+      "description": "Cached scraping results with TTL expiration timestamp",
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "data": {
+          "type": "string",
+          "description": "JSON stringified media data"
+        },
+        "expiresAt": {
+          "type": "number",
+          "description": "Expiration timestamp in epoch ms"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 100
+        }
+      },
+      "required": ["key", "data", "expiresAt"]
     }
   },
   "firestore": {
@@ -77,6 +101,10 @@
     "/users/{userId}/watchlist/{itemId}": {
       "schema": "WatchlistItem",
       "description": "Items added by the user to their personal watchlist"
+    },
+    "/media_cache/{cacheId}": {
+      "schema": "MediaCache",
+      "description": "Persistent scrape cache entries for home content, media details, search, and streams"
     }
   }
 }

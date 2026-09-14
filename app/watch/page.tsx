@@ -20,9 +20,19 @@ import {
   Copy,
   Layers,
 } from 'lucide-react';
-import VideoPlayer from '@/components/VideoPlayer';
+import dynamic from 'next/dynamic';
 import EpisodesGrid from '@/components/EpisodesGrid';
 import { MediaItem, EpisodeItem, ServerOption } from '@/lib/types';
+
+const VideoPlayer = dynamic(() => import('@/components/VideoPlayer'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full aspect-video bg-neutral-900 rounded-2xl border border-neutral-800 animate-pulse flex flex-col items-center justify-center text-neutral-400">
+      <div className="w-10 h-10 rounded-full border-2 border-red-600 border-t-transparent animate-spin mb-2" />
+      <span className="text-xs font-semibold">جاري تجهيز مشغل الفيديو...</span>
+    </div>
+  ),
+});
 import { useWatchlist } from '@/contexts/WatchlistContext';
 import { safeFetchJson } from '@/lib/utils';
 import {

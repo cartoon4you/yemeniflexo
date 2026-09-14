@@ -240,6 +240,41 @@ export async function GET(request: NextRequest) {
       responseHeaders.set('Content-Range', String(upstreamHeaders['content-range']));
     }
 
+    // Handle HLS .m3u8 playlist segment URL rewriting
+    const isM3U8 = (contentType && contentType.includes('mpegurl')) || lowerUrl.includes('.m3u8');
+    if (isM3U8) {
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of stream) {
+        chunks.push(chunk);
+      }
+      const playlistText = Buffer.concat(chunks).toString('utf-8');
+      const baseObj = new URL(videoUrl);
+
+      const rewrittenPlaylist = playlistText
+        .split('\n')
+        .map((line) => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) {
+            return line;
+          }
+          try {
+            const absSegmentUrl = new URL(trimmed, baseObj).toString();
+            return `/api/proxy/video?url=${encodeURIComponent(absSegmentUrl)}`;
+          } catch {
+            return line;
+          }
+        })
+        .join('\n');
+
+      responseHeaders.set('Content-Type', 'application/vnd.apple.mpegurl');
+      responseHeaders.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+
+      return new Response(rewrittenPlaylist, {
+        status: statusCode,
+        headers: responseHeaders,
+      });
+    }
+
     // تحويل ReadableStream من Node.js إلى Web Readable Stream
     const webStream = Readable.toWeb(stream) as ReadableStream;
 
