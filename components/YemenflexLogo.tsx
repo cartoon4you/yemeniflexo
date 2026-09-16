@@ -87,6 +87,7 @@ export default function YemenflexLogo({
             <span
               className={`${dimensions.subClass} text-neutral-300/90 font-medium tracking-normal -mt-0.5`}
               dir="rtl"
+              style={{ fontSize: '7.5px', lineHeight: '8.625px', textAlign: 'center' }}
             >
               لمشاهدة الأفلام والمسلسلات
             </span>

@@ -20,12 +20,13 @@ import {
   User,
   X,
   Layers,
+  Home,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWatchlist } from '@/contexts/WatchlistContext';
 import { CATEGORIES } from '@/lib/catalog-data';
 import { useIsMounted } from '@/hooks/use-mounted';
-import PreloadSpeedBadge from '@/components/PreloadSpeedBadge';
 import YemenflexLogo from '@/components/YemenflexLogo';
 
 export default function Navbar() {
@@ -39,10 +40,12 @@ export default function Navbar() {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
   const categoriesRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -64,11 +67,19 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Auto focus mobile search input when expanded
+  useEffect(() => {
+    if (isMobileSearchOpen && mobileSearchInputRef.current) {
+      mobileSearchInputRef.current.focus();
+    }
+  }, [isMobileSearchOpen]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setIsMobileMenuOpen(false);
+      setIsMobileSearchOpen(false);
     }
   };
 
@@ -107,22 +118,23 @@ export default function Navbar() {
   return (
     <header
       id="main-navbar"
-      className="sticky top-0 z-50 w-full bg-neutral-950/95 backdrop-blur-md border-b border-neutral-800/80 transition-all"
+      className="fixed top-0 inset-x-0 z-50 w-full bg-neutral-950/95 backdrop-blur-md border-b border-neutral-800/80 shadow-lg shadow-black/50 transition-all"
       dir="rtl"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
-        {/* Brand Logo & Main Nav */}
-        <div className="flex items-center gap-8">
+      {/* Compact Main Top Bar */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 lg:h-18 flex items-center justify-between gap-2 sm:gap-4">
+        {/* Brand Logo & Desktop Nav Links */}
+        <div className="flex items-center gap-4 lg:gap-8 shrink-0">
           <Link
             href="/"
             id="brand-logo"
-            className="group transition-transform active:scale-95"
+            className="group flex items-center transition-transform active:scale-95"
             aria-label="الصفحة الرئيسية - يمن فلکس Yemenflex"
           >
             <YemenflexLogo size="md" priority />
           </Link>
 
-          {/* Desktop Navigation Links */}
+          {/* Desktop Navigation Links (Large Screens) */}
           <nav className="hidden lg:flex items-center gap-1">
             <Link
               href="/"
@@ -279,15 +291,13 @@ export default function Navbar() {
           </nav>
         </div>
 
-        {/* Right Side: Search & User Account & Preload Speed Turbo */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <PreloadSpeedBadge />
-
-          {/* Search Form (Desktop) */}
+        {/* Right Action Group */}
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-1 justify-end max-w-md">
+          {/* Desktop Search Bar (Medium & Large screens) */}
           <form
             onSubmit={handleSearchSubmit}
-            id="search-form-desktop"
-            className="relative hidden md:block w-64 lg:w-72"
+            id="search-form-header"
+            className="hidden md:flex relative flex-1 max-w-xs"
           >
             <input
               type="text"
@@ -295,26 +305,44 @@ export default function Navbar() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="ابحث عن فيلم أو مسلسل..."
-              className="w-full bg-neutral-900/90 text-sm text-white placeholder-neutral-500 pl-4 pr-10 py-2 rounded-full border border-neutral-800 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition"
+              className="w-full bg-neutral-900/90 text-xs sm:text-sm text-white placeholder-neutral-500 pl-4 pr-9 py-2 rounded-full border border-neutral-800 focus:outline-none focus:border-red-600 focus:ring-2 focus:ring-red-600/30 transition shadow-inner"
             />
             <button
               type="submit"
               id="search-submit-btn"
-              className="absolute right-3 top-2.5 text-neutral-400 hover:text-white transition"
+              className="absolute right-3 top-2.5 text-neutral-400 hover:text-white transition cursor-pointer"
               aria-label="بحث"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-4 h-4 text-red-500" />
             </button>
           </form>
 
-          {/* User Profile / Firebase Auth Button */}
+          {/* Expandable Mobile Search Toggle Icon Button */}
+          <button
+            type="button"
+            id="mobile-search-toggle-btn"
+            onClick={() => {
+              setIsMobileSearchOpen(!isMobileSearchOpen);
+              if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+            }}
+            className="md:hidden flex items-center justify-center h-10 w-10 rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 border border-neutral-800/90 transition active:scale-95 cursor-pointer shrink-0"
+            aria-label="فتح البحث"
+          >
+            {isMobileSearchOpen ? (
+              <X className="w-4.5 h-4.5 text-red-500" />
+            ) : (
+              <Search className="w-4.5 h-4.5 text-red-500" />
+            )}
+          </button>
+
+          {/* User Profile Avatar / Quick Link */}
           {currentUser ? (
-            <div className="relative" ref={userMenuRef}>
+            <div className="relative shrink-0" ref={userMenuRef}>
               <button
                 type="button"
                 id="user-profile-btn"
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-full hover:bg-neutral-800/80 border border-neutral-800 transition"
+                className="flex items-center gap-1.5 p-1 rounded-full hover:bg-neutral-800/80 border border-neutral-800 transition cursor-pointer"
               >
                 {currentUser.photoURL ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -328,10 +356,10 @@ export default function Navbar() {
                     {currentUser.displayName ? currentUser.displayName[0] : 'U'}
                   </div>
                 )}
-                <span className="hidden sm:block text-xs font-medium text-neutral-200 max-w-[100px] truncate">
+                <span className="hidden lg:block text-xs font-medium text-neutral-200 max-w-[90px] truncate">
                   {currentUser.displayName || 'حسابي'}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-400 hidden sm:block" />
               </button>
 
               {isUserMenuOpen && (
@@ -357,7 +385,7 @@ export default function Navbar() {
                       href="/watchlist"
                       id="dropdown-user-watchlist"
                       onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white transition"
+                      className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white transition"
                     >
                       <span className="flex items-center gap-2">
                         <Bookmark className="w-3.5 h-3.5 text-red-500" />
@@ -375,7 +403,7 @@ export default function Navbar() {
                         setIsUserMenuOpen(false);
                         logout();
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-950/40 hover:text-red-300 transition"
+                      className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs text-red-400 hover:bg-red-950/40 hover:text-red-300 transition"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>تسجيل الخروج</span>
@@ -387,130 +415,187 @@ export default function Navbar() {
           ) : (
             <button
               type="button"
-              id="sign-in-btn"
-              onClick={handleGoogleSignIn}
-              disabled={authLoading}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:scale-95 text-white text-xs font-semibold shadow-lg shadow-red-900/20 transition disabled:opacity-60"
+              id="scroll-to-bottom-login-btn"
+              onClick={() => {
+                const bottomLogin = document.getElementById('bottom-login-section');
+                if (bottomLogin) {
+                  bottomLogin.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  handleGoogleSignIn();
+                }
+              }}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 h-10 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-medium border border-neutral-800 transition active:scale-95 cursor-pointer shrink-0"
+              title="تسجيل الدخول في أسفل الصفحة"
             >
-              <LogIn className="w-4 h-4" />
-              <span>{authLoading ? 'جاري الاتصال...' : 'تسجيل الدخول'}</span>
+              <LogIn className="w-3.5 h-3.5 text-red-500" />
+              <span>تسجيل الدخول ↓</span>
             </button>
           )}
 
-          {/* Mobile Menu Toggle Button */}
+          {/* Mobile Menu Drawer Toggle Button */}
           <button
             type="button"
             id="mobile-menu-toggle-btn"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 border border-neutral-800 transition active:scale-95 cursor-pointer"
+            onClick={() => {
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+              if (isMobileSearchOpen) setIsMobileSearchOpen(false);
+            }}
+            className="lg:hidden flex items-center justify-center h-10 w-10 rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 border border-neutral-800 transition active:scale-95 cursor-pointer shrink-0"
             aria-label={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
           >
-            {isMobileMenuOpen ? <X className="w-5 h-5 text-red-500" /> : <LayoutGrid className="w-5 h-5" />}
+            {isMobileMenuOpen ? (
+              <X className="w-5 h-5 text-red-500" />
+            ) : (
+              <LayoutGrid className="w-5 h-5 text-neutral-300" />
+            )}
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
+      {/* Expandable Mobile Search Bar (Popdown Banner) */}
+      {isMobileSearchOpen && (
+        <div
+          id="expandable-mobile-search-bar"
+          className="md:hidden bg-neutral-950/98 backdrop-blur-xl border-b border-neutral-800 px-3 py-2.5 animate-in slide-in-from-top-2 duration-150"
+        >
+          <form onSubmit={handleSearchSubmit} className="relative flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                ref={mobileSearchInputRef}
+                type="text"
+                id="search-input-mobile-expandable"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث عن فيلم أو مسلسل..."
+                className="w-full bg-neutral-900 text-sm text-white placeholder-neutral-500 pl-4 pr-10 h-11 rounded-xl border border-neutral-800 focus:outline-none focus:border-red-600 focus:ring-2 focus:ring-red-600/30 transition shadow-inner"
+              />
+              <Search className="w-4.5 h-4.5 text-red-500 absolute right-3.5 top-3 pointer-events-none" />
+            </div>
+            <button
+              type="submit"
+              className="h-11 px-4 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-xs rounded-xl transition cursor-pointer shrink-0"
+            >
+              بحث
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Mobile Drawer Backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-200"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Drawer Menu (Slide-in / Popdown Drawer) */}
       {isMobileMenuOpen && (
         <div
           id="mobile-menu-drawer"
-          className="lg:hidden bg-neutral-950/98 backdrop-blur-2xl border-b border-neutral-800 px-4 pt-3 pb-6 space-y-4 animate-in slide-in-from-top-2 duration-200"
+          className="absolute top-full left-0 right-0 z-50 lg:hidden bg-neutral-950/98 backdrop-blur-2xl border-b border-neutral-800 shadow-2xl max-h-[85vh] overflow-y-auto px-4 pt-4 pb-8 space-y-5 animate-in slide-in-from-top-2 duration-200"
         >
-          {/* Mobile Search */}
-          <form onSubmit={handleSearchSubmit} className="relative">
-            <input
-              type="text"
-              id="search-input-mobile"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث عن فيلم أو مسلسل..."
-              className="w-full bg-neutral-900 text-sm text-white placeholder-neutral-500 pl-4 pr-11 py-3 rounded-xl border border-neutral-800 focus:outline-none focus:border-red-600 transition"
-            />
-            <button
-              type="submit"
-              className="absolute right-3 top-3 text-neutral-400 hover:text-white p-1 min-w-[32px] min-h-[32px] flex items-center justify-center cursor-pointer"
-              aria-label="بحث"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          </form>
-
-          {/* Mobile Nav Links */}
+          {/* Mobile Nav Links Grid with 44px Touch Targets */}
           <div className="grid grid-cols-2 gap-2 text-center text-sm font-medium">
             <Link
               href="/"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center justify-center min-h-[44px] p-2.5 rounded-xl transition ${
+              className={`flex items-center justify-center gap-2 h-11 px-3 rounded-xl transition cursor-pointer ${
                 pathname === '/'
-                  ? 'bg-red-600 text-white font-bold shadow-md shadow-red-950/40'
+                  ? 'bg-red-600 text-white font-bold shadow-lg shadow-red-950/50'
                   : 'bg-neutral-900/90 text-neutral-200 hover:bg-neutral-800'
               }`}
             >
-              الرئيسية
+              <Home className="w-4 h-4 text-white" />
+              <span>الرئيسية</span>
             </Link>
+
             <Link
               href="/catalog?type=movie"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center justify-center min-h-[44px] p-2.5 rounded-xl bg-neutral-900/90 text-neutral-200 hover:bg-neutral-800 transition"
-            >
-              الأفلام
-            </Link>
-            <Link
-              href="/catalog?type=series"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center justify-center min-h-[44px] p-2.5 rounded-xl bg-neutral-900/90 text-neutral-200 hover:bg-neutral-800 transition"
-            >
-              المسلسلات
-            </Link>
-            <Link
-              href="/watchlist"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center justify-center gap-1.5 min-h-[44px] p-2.5 rounded-xl transition ${
-                pathname === '/watchlist'
-                  ? 'bg-red-600 text-white font-bold'
+              className={`flex items-center justify-center gap-2 h-11 px-3 rounded-xl transition cursor-pointer ${
+                pathname.includes('type=movie')
+                  ? 'bg-red-600 text-white font-bold shadow-lg shadow-red-950/50'
                   : 'bg-neutral-900/90 text-neutral-200 hover:bg-neutral-800'
               }`}
             >
-              <Bookmark className="w-4 h-4 text-red-400" />
+              <Film className="w-4 h-4 text-red-400" />
+              <span>الأفلام</span>
+            </Link>
+
+            <Link
+              href="/catalog?type=series"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center justify-center gap-2 h-11 px-3 rounded-xl transition cursor-pointer ${
+                pathname.includes('type=series')
+                  ? 'bg-red-600 text-white font-bold shadow-lg shadow-red-950/50'
+                  : 'bg-neutral-900/90 text-neutral-200 hover:bg-neutral-800'
+              }`}
+            >
+              <Tv className="w-4 h-4 text-emerald-400" />
+              <span>المسلسلات</span>
+            </Link>
+
+            <Link
+              href="/watchlist"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center justify-center gap-2 h-11 px-3 rounded-xl transition cursor-pointer ${
+                pathname === '/watchlist'
+                  ? 'bg-red-600 text-white font-bold shadow-lg shadow-red-950/50'
+                  : 'bg-neutral-900/90 text-neutral-200 hover:bg-neutral-800'
+              }`}
+            >
+              <Bookmark className="w-4 h-4 text-amber-400" />
               <span>قائمتي {mounted && watchlist.length > 0 ? `(${watchlist.length})` : ''}</span>
             </Link>
+
             <Link
               href="/linkgrabber"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`col-span-2 flex items-center justify-center gap-2 min-h-[44px] p-2.5 rounded-xl border font-semibold transition ${
+              className={`col-span-2 flex items-center justify-center gap-2 h-11 px-3 rounded-xl border font-semibold transition cursor-pointer ${
                 pathname === '/linkgrabber'
-                  ? 'bg-red-600 text-white border-red-500'
+                  ? 'bg-red-600 text-white border-red-500 shadow-lg shadow-red-950/50'
                   : 'bg-red-600/15 text-red-400 border-red-500/30 hover:bg-red-600/25'
               }`}
             >
-              <Layers className="w-4 h-4 text-red-500" />
+              <Layers className="w-4.5 h-4.5 text-red-500" />
               <span>محلل الروابط (LinkGrabber)</span>
             </Link>
           </div>
 
-          {/* Mobile Categories & Subcategories Accordion */}
-          <div className="border-t border-neutral-900 pt-3 space-y-3">
-            <div className="text-xs font-semibold text-neutral-400">
-              تصفح حسب القسم والأصناف الفرعية
+          {/* Categories & Subcategories Grid Section */}
+          <div className="border-t border-neutral-900 pt-4 space-y-3">
+            <div className="flex items-center justify-between text-xs font-bold text-neutral-400">
+              <span>تصفح حسب القسم والأصناف الفرعية</span>
+              <Link
+                href="/catalog"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-red-500 hover:underline flex items-center gap-1 text-[11px]"
+              >
+                <span>عرض المكتبة كاملة</span>
+                <ArrowRight className="w-3 h-3 rotate-180" />
+              </Link>
             </div>
-            <div className="space-y-2">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {CATEGORIES.map((cat) => (
-                <div key={cat.id} className="p-2.5 rounded-xl bg-neutral-900/60 border border-neutral-800/80 space-y-2">
+                <div key={cat.id} className="p-3 rounded-xl bg-neutral-900/70 border border-neutral-800/80 space-y-2.5">
                   <Link
                     href={cat.id === 'all' ? '/catalog' : `/catalog?category=${cat.id}`}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center justify-between text-xs font-bold text-neutral-200 hover:text-white"
+                    className="flex items-center justify-between h-11 px-2.5 rounded-lg bg-neutral-950/80 hover:bg-neutral-950 text-xs font-bold text-neutral-100 border border-neutral-800/50 transition"
                   >
                     <div className="flex items-center gap-2">
                       {getCategoryIcon(cat.icon)}
                       <span>{cat.label}</span>
                     </div>
-                    <span className="text-[10px] text-red-400 font-semibold">عرض الكل</span>
+                    <span className="text-[11px] text-red-400 font-medium">تصفح ←</span>
                   </Link>
 
                   {cat.subcategories && cat.subcategories.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {cat.subcategories.slice(0, 4).map((sub) => (
+                      {cat.subcategories.slice(0, 5).map((sub) => (
                         <Link
                           key={sub.id}
                           href={
@@ -519,7 +604,7 @@ export default function Navbar() {
                               : `/catalog?category=${cat.id}&genre=${sub.id}`
                           }
                           onClick={() => setIsMobileMenuOpen(false)}
-                          className="px-2.5 py-1 min-h-[32px] flex items-center justify-center rounded-lg bg-neutral-950 text-[11px] text-neutral-300 hover:text-white border border-neutral-800 transition active:scale-95"
+                          className="px-3 min-h-[36px] flex items-center justify-center rounded-lg bg-neutral-950 text-xs text-neutral-300 hover:text-white border border-neutral-800/80 transition active:scale-95"
                         >
                           {sub.label}
                         </Link>
@@ -529,6 +614,61 @@ export default function Navbar() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Account Footer Action in Mobile Drawer */}
+          <div className="border-t border-neutral-900 pt-4">
+            {currentUser ? (
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-neutral-900/90 border border-neutral-800">
+                <div className="flex items-center gap-3">
+                  {currentUser.photoURL ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={currentUser.photoURL}
+                      alt={currentUser.displayName || 'User'}
+                      className="w-10 h-10 rounded-full object-cover border border-red-500/50"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center text-sm font-bold">
+                      {currentUser.displayName ? currentUser.displayName[0] : 'U'}
+                    </div>
+                  )}
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-bold text-white truncate">
+                      {currentUser.displayName || 'المستخدم'}
+                    </p>
+                    <p className="text-[11px] text-neutral-400 truncate">
+                      {currentUser.email}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    logout();
+                  }}
+                  className="h-10 px-3 flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 bg-red-950/30 hover:bg-red-950/60 rounded-xl border border-red-800/40 transition shrink-0"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>خروج</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleGoogleSignIn();
+                }}
+                disabled={authLoading}
+                className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-xs shadow-lg shadow-red-950/50 transition active:scale-95 cursor-pointer disabled:opacity-60 border border-red-500/50"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>{authLoading ? 'جاري الاتصال بـ Google...' : 'تسجيل الدخول عبر Google'}</span>
+              </button>
+            )}
           </div>
         </div>
       )}

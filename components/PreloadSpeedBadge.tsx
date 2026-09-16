@@ -48,7 +48,7 @@ export default function PreloadSpeedBadge() {
         id="preload-turbo-trigger"
         onClick={() => setIsOpen(true)}
         title="ميزة السرعة والتحميل المسبق (Turbo Preload)"
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all duration-200 border cursor-pointer select-none active:scale-95 ${
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 border cursor-pointer select-none active:scale-95 ${
           enabled
             ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30 shadow-sm shadow-amber-950/20'
             : 'bg-neutral-800/80 text-neutral-400 border-neutral-700 hover:text-neutral-200'

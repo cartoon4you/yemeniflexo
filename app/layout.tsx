@@ -4,6 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { WatchlistProvider } from '@/contexts/WatchlistContext';
 import Navbar from '@/components/Navbar';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import Footer from '@/components/Footer';
 import TelemetryOptimization from '@/components/TelemetryOptimization';
 import Link from 'next/link';
 import { Film, Heart, Shield, Sparkles } from 'lucide-react';
@@ -119,29 +120,8 @@ export default function RootLayout({
           <WatchlistProvider>
             <Navbar />
             <MobileBottomNav />
-            <main className="flex-1 w-full pb-12 md:pb-16">{children}</main>
-            <footer className="w-full bg-neutral-950 border-t border-neutral-800/80 py-10 px-4 sm:px-8 text-neutral-400 text-xs" dir="rtl">
-              <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <YemenflexLogo size="sm" />
-                  <p className="text-[11px] text-neutral-400 max-w-xs sm:border-r sm:border-neutral-800 sm:pr-3">
-                    بث فائق الجودة، سيرفرات سريعة، وبدون إعلانات مزعجة.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-6 text-neutral-400">
-                  <Link href="/" className="hover:text-white transition">الرئيسية</Link>
-                  <Link href="/catalog?type=movie" className="hover:text-white transition">الأفلام</Link>
-                  <Link href="/catalog?type=series" className="hover:text-white transition">المسلسلات</Link>
-                  <Link href="/watchlist" className="hover:text-white transition">قائمة المشاهدة</Link>
-                </div>
-
-                <div className="flex items-center gap-2 text-neutral-400">
-                  <Shield className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>تزامن سحابي آمن عبر Firebase Firestore</span>
-                </div>
-              </div>
-            </footer>
+            <main className="flex-1 w-full pt-[112px] md:pt-[64px] lg:pt-[72px] pb-12 md:pb-16">{children}</main>
+            <Footer />
           </WatchlistProvider>
         </AuthProvider>
       </body>

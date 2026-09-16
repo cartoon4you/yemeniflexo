@@ -36,7 +36,10 @@ export async function getFirestoreCache<T>(key: string): Promise<T | null> {
         return JSON.parse(data.data) as T;
       }
       return null;
-    })();
+    })().catch((err) => {
+      console.warn(`[Firestore Cache Read Error] Key: ${key}`, err);
+      return null;
+    });
 
     return await Promise.race([readPromise, timeoutPromise]);
   } catch (err) {

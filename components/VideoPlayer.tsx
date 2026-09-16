@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { ServerOption } from '@/lib/types';
 import { preloadVideoChunk } from '@/lib/preload-manager';
+import Hls from 'hls.js';
 
 interface VideoPlayerProps {
   servers: ServerOption[];
@@ -155,43 +156,36 @@ export default function VideoPlayer({
 
     const isHls = streamUrl.includes('.m3u8') || activeServer?.type === 'hls';
 
-    if (isHls) {
-      import('hls.js')
-        .then(({ default: Hls }) => {
-          if (isCancelled || !videoRef.current) return;
-          if (Hls.isSupported()) {
-            const hls = new Hls({
-              enableWorker: true,
-              lowLatencyMode: false,
-              maxBufferLength: 60,
-              maxMaxBufferLength: 120,
-              maxBufferSize: 60 * 1024 * 1024,
-              backBufferLength: 30,
-              progressive: true,
-            });
-            hlsRef.current = hls;
-
-            hls.loadSource(streamUrl);
-            hls.attachMedia(video);
-
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-              if (isCancelled) return;
-              setIsLoading(false);
-              safePlay(video);
-            });
-
-            hls.on(Hls.Events.ERROR, (_event, data) => {
-              if (data.fatal && !isCancelled) {
-                console.warn('HLS Fatal Error:', data.type);
-                setIsLoading(false);
-                setErrorMsg('تعذر تشغيل هذا البث المباشر. يرجى اختيار سيرفر آخر من القائمة.');
-              }
-            });
-          }
-        })
-        .catch((err) => {
-          console.warn('Failed to dynamically import hls.js:', err);
+    if (isHls && Hls.isSupported()) {
+      if (!isCancelled && videoRef.current) {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          maxBufferLength: 60,
+          maxMaxBufferLength: 120,
+          maxBufferSize: 60 * 1024 * 1024,
+          backBufferLength: 30,
+          progressive: true,
         });
+        hlsRef.current = hls;
+
+        hls.loadSource(streamUrl);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          if (isCancelled) return;
+          setIsLoading(false);
+          safePlay(video);
+        });
+
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (data.fatal && !isCancelled) {
+            console.warn('HLS Fatal Error:', data.type);
+            setIsLoading(false);
+            setErrorMsg('تعذر تشغيل هذا البث المباشر. يرجى اختيار سيرفر آخر من القائمة.');
+          }
+        });
+      }
     } else {
       // Native Video (MP4 / WebM)
       video.src = streamUrl;
