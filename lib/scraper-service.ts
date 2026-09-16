@@ -325,16 +325,53 @@ export async function getHomeContent(): Promise<{
 }
 
 /**
- * Filter catalog items by Category, Type, and Sort
+ * Helper to match item genres against a requested subcategory/genre id or title
+ */
+function matchesGenre(itemGenres: string[], target: string): boolean {
+  if (!target || target === 'all') return true;
+  if (!itemGenres || itemGenres.length === 0) return false;
+
+  const targetLower = target.toLowerCase().trim();
+
+  return itemGenres.some((g) => {
+    const gLower = g.toLowerCase();
+    if (gLower.includes(targetLower) || targetLower.includes(gLower)) return true;
+
+    if (targetLower === 'action' && (gLower.includes('أكشن') || gLower.includes('action'))) return true;
+    if (targetLower === 'drama' && (gLower.includes('دراما') || gLower.includes('drama'))) return true;
+    if (targetLower === 'comedy' && (gLower.includes('كوميديا') || gLower.includes('comedy'))) return true;
+    if (targetLower === 'thriller' && (gLower.includes('تشويق') || gLower.includes('إثارة') || gLower.includes('thriller'))) return true;
+    if (targetLower === 'sci-fi' && (gLower.includes('خيال') || gLower.includes('sci-fi'))) return true;
+    if (targetLower === 'fantasy' && (gLower.includes('فانتازيا') || gLower.includes('fantasy'))) return true;
+    if (targetLower === 'historical' && (gLower.includes('تاريخي') || gLower.includes('تاريخ') || gLower.includes('حرب'))) return true;
+    if (targetLower === 'crime' && (gLower.includes('جريمة') || gLower.includes('crime'))) return true;
+    if (targetLower === 'adventure' && (gLower.includes('مغامرة') || gLower.includes('adventure'))) return true;
+    if (targetLower === 'horror' && (gLower.includes('رعب') || gLower.includes('horror'))) return true;
+    if (targetLower === 'romance' && (gLower.includes('رومانسي') || gLower.includes('رومانسية') || gLower.includes('romance'))) return true;
+    if (targetLower === 'biography' && (gLower.includes('سيرة') || gLower.includes('biography'))) return true;
+    if (targetLower === 'war' && (gLower.includes('حرب') || gLower.includes('حروب') || gLower.includes('war'))) return true;
+    if (targetLower === 'mystery' && (gLower.includes('غموض') || gLower.includes('mystery'))) return true;
+    if (targetLower === 'nature' && (gLower.includes('طبيعة') || gLower.includes('حيوانات') || gLower.includes('nature'))) return true;
+    if (targetLower === 'social' && (gLower.includes('اجتماعي') || gLower.includes('دراما'))) return true;
+
+    return false;
+  });
+}
+
+/**
+ * Filter catalog items by Category, Subcategory/Genre, Type, and Sort
  */
 export async function getCatalogItems(params: {
   category?: string;
+  subcategory?: string;
+  genre?: string;
   type?: string;
   sort?: string;
   page?: number;
   limit?: number;
 }): Promise<{ items: MediaItem[]; total: number; page: number; totalPages: number }> {
-  const { category = 'all', type, sort = 'latest', page = 1, limit = 18 } = params;
+  const { category = 'all', subcategory, genre, type, sort = 'latest', page = 1, limit = 18 } = params;
+  const activeSubcategory = subcategory || genre;
 
   // Fetch live if requested or retrieve from cache
   const homeData = await getHomeContent();
@@ -352,12 +389,17 @@ export async function getCatalogItems(params: {
     items = items.filter((item) => item.category === category);
   }
 
-  // 2. Filter by type (movie | series)
+  // 2. Filter by subcategory / genre
+  if (activeSubcategory && activeSubcategory !== 'all') {
+    items = items.filter((item) => matchesGenre(item.genres || [], activeSubcategory));
+  }
+
+  // 3. Filter by type (movie | series)
   if (type && type !== 'all') {
     items = items.filter((item) => item.type === type);
   }
 
-  // 3. Sort
+  // 4. Sort
   if (sort === 'rating') {
     items.sort((a, b) => parseFloat(b.rating || '0') - parseFloat(a.rating || '0'));
   } else if (sort === 'year') {

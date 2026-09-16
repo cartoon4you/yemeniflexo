@@ -45,11 +45,18 @@ export interface WatchlistItem {
   addedAt: string;
 }
 
+export interface SubCategoryOption {
+  id: string;
+  label: string;
+  count?: number;
+}
+
 export interface CategoryOption {
   id: string;
   label: string;
   icon: string;
   type: 'all' | 'movie' | 'series' | 'anime';
+  subcategories?: SubCategoryOption[];
 }
 
 export interface LinkGrabberFile {

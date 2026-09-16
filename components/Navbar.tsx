@@ -181,32 +181,60 @@ export default function Navbar() {
                 />
               </button>
 
-              {/* Dropdown Menu */}
+              {/* Subcategories Mega Dropdown Menu */}
               {isCategoriesOpen && (
                 <div
                   id="categories-dropdown-menu"
-                  className="absolute right-0 mt-2 w-64 bg-neutral-900/98 backdrop-blur-xl border border-neutral-800 rounded-2xl p-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+                  className="absolute right-0 mt-2 w-80 sm:w-[440px] bg-neutral-900/98 backdrop-blur-2xl border border-neutral-800 rounded-2xl p-3.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150 max-h-[80vh] overflow-y-auto"
                 >
-                  <div className="px-3 py-2 text-xs font-semibold text-neutral-400 border-b border-neutral-800/80 mb-1">
-                    تصفح حسب القسم
+                  <div className="flex items-center justify-between px-2 pb-2 text-xs font-bold text-neutral-400 border-b border-neutral-800/80 mb-2.5">
+                    <span>تصفح حسب القسم والأصناف الفرعية</span>
+                    <Link
+                      href="/catalog"
+                      onClick={() => setIsCategoriesOpen(false)}
+                      className="text-red-500 hover:underline text-[11px]"
+                    >
+                      عرض الكل ←
+                    </Link>
                   </div>
-                  <div className="grid grid-cols-1 gap-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {CATEGORIES.map((cat) => (
-                      <Link
-                        key={cat.id}
-                        href={cat.id === 'all' ? '/catalog' : `/catalog?category=${cat.id}`}
-                        id={`category-item-${cat.id}`}
-                        onClick={() => setIsCategoriesOpen(false)}
-                        className="flex items-center justify-between px-3 py-2 rounded-xl text-sm text-neutral-200 hover:bg-neutral-800 hover:text-white transition group"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          {getCategoryIcon(cat.icon)}
-                          <span>{cat.label}</span>
-                        </div>
-                        <span className="text-[11px] text-neutral-500 group-hover:text-red-400 transition">
-                          عرض
-                        </span>
-                      </Link>
+                      <div key={cat.id} className="p-2.5 rounded-xl bg-neutral-950/60 border border-neutral-800/70 space-y-2">
+                        <Link
+                          href={cat.id === 'all' ? '/catalog' : `/catalog?category=${cat.id}`}
+                          id={`category-item-${cat.id}`}
+                          onClick={() => setIsCategoriesOpen(false)}
+                          className="flex items-center justify-between text-xs font-bold text-neutral-100 hover:text-red-400 transition group"
+                        >
+                          <div className="flex items-center gap-2">
+                            {getCategoryIcon(cat.icon)}
+                            <span>{cat.label}</span>
+                          </div>
+                          <span className="text-[10px] text-neutral-500 group-hover:text-red-500 transition">
+                            عرض
+                          </span>
+                        </Link>
+
+                        {/* Subcategory Pills */}
+                        {cat.subcategories && cat.subcategories.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {cat.subcategories.slice(0, 5).map((sub) => (
+                              <Link
+                                key={sub.id}
+                                href={
+                                  cat.id === 'all'
+                                    ? `/catalog?genre=${sub.id}`
+                                    : `/catalog?category=${cat.id}&genre=${sub.id}`
+                                }
+                                onClick={() => setIsCategoriesOpen(false)}
+                                className="px-2 py-0.5 rounded-md bg-neutral-900 hover:bg-red-600 hover:text-white text-[10px] text-neutral-400 transition border border-neutral-800/80"
+                              >
+                                {sub.label}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -460,22 +488,45 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Mobile Categories Accordion */}
-          <div className="border-t border-neutral-900 pt-3">
-            <div className="text-xs font-semibold text-neutral-400 mb-2.5">
-              التصنيفات المتاحة
+          {/* Mobile Categories & Subcategories Accordion */}
+          <div className="border-t border-neutral-900 pt-3 space-y-3">
+            <div className="text-xs font-semibold text-neutral-400">
+              تصفح حسب القسم والأصناف الفرعية
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
               {CATEGORIES.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={cat.id === 'all' ? '/catalog' : `/catalog?category=${cat.id}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2.5 min-h-[44px] rounded-xl bg-neutral-900/70 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 border border-neutral-800/60 transition active:scale-95"
-                >
-                  {getCategoryIcon(cat.icon)}
-                  <span className="truncate">{cat.label}</span>
-                </Link>
+                <div key={cat.id} className="p-2.5 rounded-xl bg-neutral-900/60 border border-neutral-800/80 space-y-2">
+                  <Link
+                    href={cat.id === 'all' ? '/catalog' : `/catalog?category=${cat.id}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between text-xs font-bold text-neutral-200 hover:text-white"
+                  >
+                    <div className="flex items-center gap-2">
+                      {getCategoryIcon(cat.icon)}
+                      <span>{cat.label}</span>
+                    </div>
+                    <span className="text-[10px] text-red-400 font-semibold">عرض الكل</span>
+                  </Link>
+
+                  {cat.subcategories && cat.subcategories.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {cat.subcategories.slice(0, 4).map((sub) => (
+                        <Link
+                          key={sub.id}
+                          href={
+                            cat.id === 'all'
+                              ? `/catalog?genre=${sub.id}`
+                              : `/catalog?category=${cat.id}&genre=${sub.id}`
+                          }
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="px-2.5 py-1 min-h-[32px] flex items-center justify-center rounded-lg bg-neutral-950 text-[11px] text-neutral-300 hover:text-white border border-neutral-800 transition active:scale-95"
+                        >
+                          {sub.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>

@@ -15,12 +15,14 @@ export default async function CatalogPage({
 }) {
   const params = await searchParams;
   const activeCategory = (params.category as string) || 'all';
+  const activeSubcategory = (params.genre as string) || (params.subcategory as string) || 'all';
   const activeType = (params.type as string) || 'all';
   const activeSort = (params.sort as string) || 'latest';
   const activePage = parseInt((params.page as string) || '1', 10);
 
   const result = await getCatalogItems({
     category: activeCategory,
+    subcategory: activeSubcategory,
     type: activeType !== 'all' ? activeType : undefined,
     sort: activeSort,
     page: activePage,
@@ -78,8 +80,13 @@ export default async function CatalogPage({
         })}
       </div>
 
-      {/* Sub-Filters: Type (Movies / Series) and Sort */}
-      <CatalogFilters activeType={activeType} activeSort={activeSort} />
+      {/* Sub-Filters: Categories, Subcategories, Type (Movies / Series) and Sort */}
+      <CatalogFilters
+        activeCategory={activeCategory}
+        activeSubcategory={activeSubcategory}
+        activeType={activeType}
+        activeSort={activeSort}
+      />
 
       {/* Items Grid */}
       {items.length > 0 ? (
